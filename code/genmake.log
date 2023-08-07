@@ -1,0 +1,105 @@
+Get compiler version using: mpiifort --version
+/export/sopt/IntelMPI/2019.9/compilers_and_libraries_2020.4.304/linux/mpi/intel64/bin/mpiifort
+ifort (IFORT) 19.1.3.304 20200925
+Copyright (C) 1985-2020 Intel Corporation.  All rights reserved.
+
+<-- compiler version ----
+
+running: check_fortran_compiler
+ mpiifort -m64 -convert big_endian -assume byterecl -mcmodel=medium -O2 -align -ip -fp-model source -axSSE4.2,AVX -c genmake_tcomp.f
+ mpiifort -shared-intel -no-ipo -m64 -convert big_endian -assume byterecl -mcmodel=medium -O2 -align -ip -fp-model source -axSSE4.2,AVX -o genmake_tcomp genmake_tcomp.o
+ mpirun -np 1 ./genmake_tcomp
+ hello world :            1
+ hello world :            2
+ hello world :            3
+ --> set FC_CHECK= 5 /5
+
+running: look_for_makedepend()
+ --> set MAKEDEPEND=$(TOOLSDIR)/xmakedepend
+
+running: check_HAVE_CLOC()
+ running: get_fortran_c_namemangling()
+ mpiicc -O0 -ip -m64 -axSSE4.2,AVX -mcmodel=medium -c genmake_test.c
+ mpiifort -m64 -convert big_endian -assume byterecl -mcmodel=medium -c genmake_tcomp.f
+ --> set FC_NAMEMANGLE='#define FC_NAMEMANGLE(X)  X ## _'
+mpiicc -O0 -ip -m64 -axSSE4.2,AVX -mcmodel=medium -c genmake_tc_1.c
+mpiifort -m64 -convert big_endian -assume byterecl -mcmodel=medium -o genmake_tc genmake_tc_2.f genmake_tc_1.o
+  HELLO WORLD   1685471722.80814     
+ --> set HAVE_CLOC='t'
+
+running: check_HAVE_SETRLSTK()
+mpiicc -O0 -ip -m64 -axSSE4.2,AVX -mcmodel=medium -c genmake_tc_1.c
+      program hello
+      external setrlstk
+      call setrlstk()
+      end
+mpiifort -m64 -convert big_endian -assume byterecl -mcmodel=medium -o genmake_tc genmake_tc_2.f genmake_tc_1.o
+ --> set HAVE_SETRLSTK='t'
+
+running: check_HAVE_SIGREG()
+mpiicc -O0 -ip -m64 -axSSE4.2,AVX -mcmodel=medium -c genmake_tc_1.c
+      program hello
+      integer anint
+      common /iv/ anint
+      external sigreg
+      call sigreg(anint)
+      end
+mpiifort -m64 -convert big_endian -assume byterecl -mcmodel=medium -o genmake_tc genmake_tc_2.f genmake_tc_1.o
+ --> set HAVE_SIGREG='t'
+
+running: check_HAVE_STAT()
+mpiicc -O0 -ip -m64 -axSSE4.2,AVX -mcmodel=medium -c genmake_tc_1.c
+      program hello
+      integer nbyte
+      call tfsize(nbyte)
+      print *," HELLO WORLD", nbyte
+      end
+mpiifort -m64 -convert big_endian -assume byterecl -mcmodel=medium -o genmake_tc genmake_tc_2.f genmake_tc_1.o
+ --> set HAVE_STAT='t'
+
+running: check_netcdf_libs()
+===  genmake_tnc.F  >>>
+      program fgennc
+#include "netcdf.inc"
+      integer iret, ncid, xid
+      iret = nf_create('genmake_tnc.nc', NF_CLOBBER, ncid)
+      IF (iret .NE. NF_NOERR) write(*,*) NF_STRERROR(iret)
+      iret = nf_def_dim(ncid, 'X', 11, xid)
+      IF (iret .NE. NF_NOERR) write(*,*) NF_STRERROR(iret)
+      iret = nf_close(ncid)
+      IF (iret .NE. NF_NOERR) write(*,*) NF_STRERROR(iret)
+      end
+<<<  genmake_tnc.F  ===
+cat genmake_tnc.F |  cpp -traditional -P -DWORDLENGTH=4 -DALLOW_USE_MPI -DHAVE_SYSTEM -DHAVE_FDATE -DHAVE_ETIME_FCT -DHAVE_CLOC -DHAVE_SETRLSTK -DHAVE_SIGREG -DHAVE_STAT  -I/export/sopt/IntelMPI/2019.9/compilers_and_libraries_2020.4.304/linux/mpi/intel64/include
+mpiifort  -m64 -convert big_endian -assume byterecl -mcmodel=medium -O2 -align -ip -fp-model source -axSSE4.2,AVX -c genmake_tnc.f  \ 
+  &&  mpiifort -shared-intel -no-ipo  -m64 -convert big_endian -assume byterecl -mcmodel=medium -O2 -align -ip -fp-model source -axSSE4.2,AVX -o genmake_tnc.o 
+genmake_tnc.o: In function `MAIN__':
+genmake_tnc.f:(.text+0x4b): undefined reference to `nf_create_'
+genmake_tnc.f:(.text+0x8b): undefined reference to `nf_def_dim_'
+genmake_tnc.f:(.text+0xa9): undefined reference to `nf_close_'
+genmake_tnc.f:(.text+0xd7): undefined reference to `nf_strerror_'
+genmake_tnc.f:(.text+0x140): undefined reference to `nf_strerror_'
+genmake_tnc.f:(.text+0x1a8): undefined reference to `nf_strerror_'
+
+==> try again with added '-lnetcdf'
+cat genmake_tnc.F |  cpp -traditional -P -DWORDLENGTH=4 -DALLOW_USE_MPI -DHAVE_SYSTEM -DHAVE_FDATE -DHAVE_ETIME_FCT -DHAVE_CLOC -DHAVE_SETRLSTK -DHAVE_SIGREG -DHAVE_STAT  -I/export/sopt/IntelMPI/2019.9/compilers_and_libraries_2020.4.304/linux/mpi/intel64/include > genmake_tnc.f \ 
+ &&  mpiifort  -m64 -convert big_endian -assume byterecl -mcmodel=medium -O2 -align -ip -fp-model source -axSSE4.2,AVX -c genmake_tnc.f \ 
+ &&  mpiifort -shared-intel -no-ipo  -m64 -convert big_endian -assume byterecl -mcmodel=medium -O2 -align -ip -fp-model source -axSSE4.2,AVX -o genmake_tnc genmake_tnc.o  -lnetcdf
+genmake_tnc.o: In function `MAIN__':
+genmake_tnc.f:(.text+0x4b): undefined reference to `nf_create_'
+genmake_tnc.f:(.text+0x8b): undefined reference to `nf_def_dim_'
+genmake_tnc.f:(.text+0xa9): undefined reference to `nf_close_'
+genmake_tnc.f:(.text+0xd7): undefined reference to `nf_strerror_'
+genmake_tnc.f:(.text+0x140): undefined reference to `nf_strerror_'
+genmake_tnc.f:(.text+0x1a8): undefined reference to `nf_strerror_'
+
+==> try again with added '-lnetcdff -lnetcdf'
+cat genmake_tnc.F |  cpp -traditional -P -DWORDLENGTH=4 -DALLOW_USE_MPI -DHAVE_SYSTEM -DHAVE_FDATE -DHAVE_ETIME_FCT -DHAVE_CLOC -DHAVE_SETRLSTK -DHAVE_SIGREG -DHAVE_STAT  -I/export/sopt/IntelMPI/2019.9/compilers_and_libraries_2020.4.304/linux/mpi/intel64/include > genmake_tnc.f \ 
+ &&  mpiifort  -m64 -convert big_endian -assume byterecl -mcmodel=medium -O2 -align -ip -fp-model source -axSSE4.2,AVX -c genmake_tnc.f \ 
+ &&  mpiifort -shared-intel -no-ipo  -m64 -convert big_endian -assume byterecl -mcmodel=medium -O2 -align -ip -fp-model source -axSSE4.2,AVX -o genmake_tnc genmake_tnc.o  -lnetcdf
+check_netcdf: successful
+ --> set HAVE_NETCDF='t'
+
+running: check_HAVE_FLUSH()
+  check_HAVE_FLUSH: successful
+ --> set HAVE_FLUSH='t'
